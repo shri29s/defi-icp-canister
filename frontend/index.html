@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalStack - DeFi Portfolio Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.8.0/web3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00d4ff, #5200ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .connect-btn {
+            background: linear-gradient(45deg, #00d4ff, #5200ff);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .portfolio-value {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #00d4ff, #5200ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .portfolio-change {
+            font-size: 1.1rem;
+            color: #00ff88;
+        }
+
+        .risk-meter {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .risk-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #ffd700, #ff4757);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .tokens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .token-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .token-card:hover {
+            border-color: rgba(0, 212, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .token-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .token-symbol {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .token-price {
+            font-size: 1.1rem;
+            color: #00d4ff;
+        }
+
+        .token-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .signal-bar {
+            margin: 1rem 0;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .signal-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: all 0.5s ease;
+        }
+
+        .positive-signal { background: linear-gradient(90deg, #00ff88, #00d4ff); }
+        .negative-signal { background: linear-gradient(90deg, #ff4757, #ff6b7a); }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        .action-btn {
+            background: linear-gradient(45deg, #5200ff, #00d4ff);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(82, 0, 255, 0.3);
+        }
+
+        .market-data {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .market-stat {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00d4ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .transactions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .success { color: #00ff88; }
+        .warning { color: #ffd700; }
+        .error { color: #ff4757; }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .main-container {
+                padding: 1rem;
+            }
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🚀 SignalStack</div>
+            <div class="wallet-section">
+                <div id="walletInfo" class="wallet-info" style="display: none;">
+                    <span class="status-indicator"></span>
+                    <span id="walletAddress"></span>
+                </div>
+                <button id="connectWallet" class="connect-btn">Connect MetaMask</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Portfolio Overview -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2 class="card-title">💰 Portfolio Value</h2>
+                <div id="portfolioValue" class="portfolio-value">$0.00</div>
+                <div id="portfolioChange" class="portfolio-change">+0.00% (24h)</div>
+                <div class="market-data">
+                    <div class="market-stat">
+                        <div class="stat-label">Fear & Greed</div>
+                        <div id="fearGreed" class="stat-value">--</div>
+                    </div>
+                    <div class="market-stat">
+                        <div class="stat-label">BTC Dominance</div>
+                        <div id="btcDominance" class="stat-value">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">⚠️ Risk Assessment</h2>
+                <div id="riskLevel" class="portfolio-change">Loading...</div>
+                <div class="risk-meter">
+                    <span>Low</span>
+                    <div class="risk-bar">
+                        <div id="riskFill" class="risk-fill" style="width: 0%"></div>
+                    </div>
+                    <span>High</span>
+                </div>
+                <div id="riskScore" style="font-size: 0.9rem; opacity: 0.8;">Risk Score: --</div>
+            </div>
+        </div>
+
+        <!-- Portfolio Tokens -->
+        <div class="card">
+            <h2 class="card-title">📊 Token Portfolio</h2>
+            <div id="tokensGrid" class="tokens-grid">
+                <!-- Tokens will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <h2 class="card-title">🔧 Portfolio Management</h2>
+            <div class="controls-grid">
+                <div class="input-group">
+                    <label class="input-label">Add Token</label>
+                    <input type="text" id="newTokenSymbol" class="input-field" placeholder="Token Symbol (e.g., SOL)">
+                    <input type="number" id="newTokenWeight" class="input-field" placeholder="Weight (basis points)">
+                    <button onclick="addToken()" class="action-btn">Add Token</button>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">Update Balance</label>
+                    <input type="text" id="balanceTokenSymbol" class="input-field" placeholder="Token Symbol">
+                    <input type="number" id="newBalance" class="input-field" placeholder="New Balance">
+                    <button onclick="updateBalance()" class="action-btn">Update Balance</button>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Portfolio Actions</label>
+                    <button onclick="refreshData()" class="action-btn">🔄 Refresh Data</button>
+                    <button onclick="rebalancePortfolio()" class="action-btn">⚖️ Auto Rebalance</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+            <h2 class="card-title">📋 Recent Transactions</h2>
+            <div id="transactionsList" class="transactions-list">
+                <div style="text-align: center; opacity: 0.7;">No transactions yet</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global variables
+        let web3;
+        let userAccount;
+        let canisterId = 'your-canister-id'; // Replace with actual canister ID
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            checkWalletConnection();
+            loadPortfolioData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadPortfolioData, 30000);
+        });
+
+        // MetaMask wallet functions
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Request account access
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_requestAccounts'
+                    });
+                    
+                    web3 = new Web3(window.ethereum);
+                    userAccount = accounts[0];
+                    
+                    // Update UI
+                    document.getElementById('connectWallet').textContent = 'Connected';
+                    document.getElementById('connectWallet').style.background = '#00ff88';
+                    document.getElementById('walletAddress').textContent = 
+                        userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+                    document.getElementById('walletInfo').style.display = 'flex';
+                    
+                    console.log('Wallet connected:', userAccount);
+                    
+                    // Listen for account changes
+                    window.ethereum.on('accountsChanged', handleAccountsChanged);
+                    
+                } catch (error) {
+                    console.error('Error connecting wallet:', error);
+                    alert('Failed to connect wallet. Please try again.');
+                }
+            } else {
+                alert('MetaMask is not installed. Please install MetaMask to continue.');
+                window.open('https://metamask.io/', '_blank');
+            }
+        }
+
+        function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                // User disconnected
+                userAccount = null;
+                document.getElementById('connectWallet').textContent = 'Connect MetaMask';
+                document.getElementById('connectWallet').style.background = 'linear-gradient(45deg, #00d4ff, #5200ff)';
+                document.getElementById('walletInfo').style.display = 'none';
+            } else {
+                userAccount = accounts[0];
+                document.getElementById('walletAddress').textContent = 
+                    userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+            }
+        }
+
+        async function checkWalletConnection() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({
+                        method: 'eth_accounts'
+                    });
+                    
+                    if (accounts.length > 0) {
+                        web3 = new Web3(window.ethereum);
+                        userAccount = accounts[0];
+                        
+                        document.getElementById('connectWallet').textContent = 'Connected';
+                        document.getElementById('connectWallet').style.background = '#00ff88';
+                        document.getElementById('walletAddress').textContent = 
+                            userAccount.substring(0, 6) + '...' + userAccount.substring(38);
+                        document.getElementById('walletInfo').style.display = 'flex';
+                        
+                        window.ethereum.on('accountsChanged', handleAccountsChanged);
+                    }
+                } catch (error) {
+                    console.error('Error checking wallet connection:', error);
+                }
+            }
+        }
+
+        // Event listener for wallet connection
+        document.getElementById('connectWallet').addEventListener('click', connectWallet);
+
+        // Portfolio data functions (mock implementations for demo)
+        async function loadPortfolioData() {
+            try {
+                // In a real implementation, these would call your IC canister
+                const portfolioData = await getMockPortfolioData();
+                updatePortfolioUI(portfolioData);
+            } catch (error) {
+                console.error('Error loading portfolio data:', error);
+            }
+        }
+
+        async function getMockPortfolioData() {
+            // Mock data - replace with actual canister calls
+            return {
+                totalValue: 125000,
+                change24h: 2.4,
+                tokens: [
+                    {
+                        symbol: 'BTC',
+                        price: 45250.00,
+                        balance: 2.5,
+                        weight: 35,
+                        targetWeight: 37.2,
+                        signal: { total_score: 1.2, momentum: 0.8, volatility: 1.5 }
+                    },
+                    {
+                        symbol: 'ETH',
+                        price: 3100.00,
+                        balance: 12.0,
+                        weight: 30,
+                        targetWeight: 28.5,
+                        signal: { total_score: -0.5, momentum: -0.3, volatility: 1.2 }
+                    },
+                    {
+                        symbol: 'ADA',
+                        price: 1.25,
+                        balance: 15000,
+                        weight: 15,
+                        targetWeight: 16.8,
+                        signal: { total_score: 0.8, momentum: 1.1, volatility: 0.9 }
+                    }
+                ],
+                riskAssessment: {
+                    risk_score: 6.2,
+                    risk_level: 'Medium',
+                    volatility: 25.4
+                },
+                marketData: {
+                    fear_greed_index: 65,
+                    btc_dominance: 42.5
+                },
+                transactions: [
+                    {
+                        id: 'tx_001',
+                        timestamp: Date.now(),
+                        tx_type: 'rebalance',
+                        amount: 125000,
+                        status: 'completed'
+                    }
+                ]
+            };
+        }
+
+        function updatePortfolioUI(data) {
+            // Update portfolio value
+            document.getElementById('portfolioValue').textContent = 
+                `$${data.totalValue.toLocaleString()}`;
+            document.getElementById('portfolioChange').textContent = 
+                `+${data.change24h.toFixed(2)}% (24h)`;
+            document.getElementById('portfolioChange').className = 
+                data.change24h >= 0 ? 'portfolio-change success' : 'portfolio-change error';
+
+            // Update market data
+            document.getElementById('fearGreed').textContent = data.marketData.fear_greed_index;
+            document.getElementById('btcDominance').textContent = `${data.marketData.btc_dominance}%`;
+
+            // Update risk assessment
+            document.getElementById('riskLevel').textContent = data.riskAssessment.risk_level;
+            document.getElementById('riskScore').textContent = 
+                `Risk Score: ${data.riskAssessment.risk_score.toFixed(1)}/10`;
+            document.getElementById('riskFill').style.width = 
+                `${(data.riskAssessment.risk_score / 10) * 100}%`;
+
+            // Update tokens
+            updateTokensGrid(data.tokens);
+
+            // Update transactions
+            updateTransactionsList(data.transactions);
+        }
+
+        function updateTokensGrid(tokens) {
+            const grid = document.getElementById('tokensGrid');
+            grid.innerHTML = '';
+
+            tokens.forEach(token => {
+                const tokenCard = document.createElement('div');
+                tokenCard.className = 'token-card';
+                
+                const signalWidth = Math.abs(token.signal.total_score) * 20;
+                const signalClass = token.signal.total_score >= 0 ? 'positive-signal' : 'negative-signal';
+                
+                tokenCard.innerHTML = `
+                    <div class="token-header">
+                        <div class="token-symbol">${token.symbol}</div>
+                        <div class="token-price">$${token.price.toLocaleString()}</div>
+                    </div>
+                    <div class="token-stats">
+                        <div class="stat">
+                            <div class="stat-label">Balance</div>
+                            <div class="stat-value">${token.balance}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Value</div>
+                            <div class="stat-value">$${(token.balance * token.price).toLocaleString()}</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Current Weight</div>
+                            <div class="stat-value">${token.weight}%</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-label">Target Weight</div>
+                            <div class="stat-value">${token.targetWeight.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="signal-bar">
+                        <div class="signal-fill ${signalClass}" style="width: ${signalWidth}%"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; text-align: center; opacity: 0.8;">
+                        Signal: ${token.signal.total_score.toFixed(2)}
+                    </div>
+                `;
+                
+                grid.appendChild(tokenCard);
+            });
+        }
+
+        function updateTransactionsList(transactions) {
+            const list = document.getElementById('transactionsList');
+            list.innerHTML = '';
+
+            if (transactions.length === 0) {
+                list.innerHTML = '<div style="text-align: center; opacity: 0.7;">No transactions yet</div>';
+                return;
+            }
+
+            transactions.forEach(tx => {
+                const txItem = document.createElement('div');
+                txItem.className = 'transaction-item';
+                
+                const date = new Date(tx.timestamp).toLocaleString();
+                const statusClass = tx.status === 'completed' ? 'success' : 
+                                   tx.status === 'pending' ? 'warning' : 'error';
+                
+                txItem.innerHTML = `
+                    <div>
+                        <div style="font-weight: 600;">${tx.tx_type.toUpperCase()}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.7;">${date}</div>
+                    </div>
+                    <div>
+                        <div>$${tx.amount.toLocaleString()}</div>
+                        <div class="${statusClass}" style="font-size: 0.8rem;">${tx.status}</div>
+                    </div>
+                `;
+                
+                list.appendChild(txItem);
+            });
+        }
+
+        // Portfolio management functions
+        async function addToken() {
+            const symbol = document.getElementById('newTokenSymbol').value.toUpperCase();
+            const weight = parseInt(document.getElementById('newTokenWeight').value);
+
+            if (!symbol || !weight) {
+                alert('Please enter both token symbol and weight');
+                return;
+            }
+
+            try {
+                // In real implementation, call canister function
+                console.log(`Adding token: ${symbol} with weight: ${weight}`);
+                alert(`Token ${symbol} added successfully!`);
+                
+                // Clear inputs
+                document.getElementById('newTokenSymbol').value = '';
+                document.getElementById('newTokenWeight').value = '';
+                
+                // Refresh data
+                await loadPortfolioData();
+            } catch (error) {
+                console.error('Error adding token:', error);
+                alert('Failed to add token');
+            }
+        }
+
+        async function updateBalance() {
+            const symbol = document.getElementById('balanceTokenSymbol').value.toUpperCase();
+            const balance = parseFloat(document.getElementById('newBalance').value);
+
+            if (!symbol || !balance) {
+                alert('Please enter both token symbol and balance');
+                return;
+            }
+
+            try {
+                console.log(`Updating balance for ${symbol}: ${balance}`);
+                alert(`Balance updated for ${symbol}!`);
+                
+                // Clear inputs
+                document.getElementById('balanceTokenSymbol').value = '';
+                document.getElementById('newBalance').value = '';
+                
+                // Refresh data
+                await loadPortfolioData();
+            } catch (error) {
+                console.error('Error updating balance:', error);
+                alert('Failed to update balance');
+            }
+        }
+
+        async function refreshData() {
+            try {
+                console.log('Refreshing market data...');
+                await loadPortfolioData();
+                alert('Data refreshed successfully!');
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+                alert('Failed to refresh data');
+            }
+        }
+
+        async function rebalancePortfolio() {
+            try {
+                console.log('Rebalancing portfolio...');
+                // In real implementation, call canister rebalance function
+                alert('Portfolio rebalanced successfully!');
+                await loadPortfolioData();
+            } catch (error) {
+                console.error('Error rebalancing portfolio:', error);
+                alert('Failed to rebalance portfolio');
+            }
+        }
+    </script>
+</body>
+</html>

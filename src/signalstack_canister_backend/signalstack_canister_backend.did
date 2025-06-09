@@ -1,0 +1,45 @@
+type TokenSignal = record {
+  total_score: float64;
+  mean_reversion: float64;
+  momentum: float64;
+  volatility: float64;
+  breakout: float64;
+  ml_confidence: float64;
+};
+
+type TokenPrice = record {
+  symbol: text;
+  price: float64;
+  timestamp: nat64;
+};
+
+type PortfolioPosition = record {
+  symbol: text;
+  weight: nat32;
+};
+
+type Portfolio = record {
+  positions: vec PortfolioPosition;
+  timestamp: nat64;
+};
+
+type HttpRequest = record {
+  method: text;
+  url: text;
+  headers: vec record { text; text };
+  body: blob;
+};
+
+type HttpResponse = record {
+  status_code: nat16;
+  headers: vec record { text; text };
+  body: blob;
+};
+
+service : {
+  get_portfolio : () -> (Portfolio) query;
+  get_token_signals : () -> (vec record { text; TokenSignal }) query;
+  http_request : (HttpRequest) -> (HttpResponse) query;
+  rebalance_portfolio : () -> () update;
+  refresh_signals : () -> () update;
+}

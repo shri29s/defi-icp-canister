@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "canisters": {
+    "signalstack_canister_backend": {
+      "type": "rust",
+      "package": "signalstack_canister_backend",
+      "candid": "src/signalstack_canister_backend/signalstack_canister_backend.did"
+    },
+    "signalstack_canister_frontend": {
+      "type": "assets",
+      "source": ["frontend"]
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943",
+      "type": "ephemeral"
+    },
+    "ic": {
+      "type": "persistent",
+      "providers": ["https://ic0.app"]
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env"
+}
